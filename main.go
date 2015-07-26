@@ -1,44 +1,61 @@
 package main
 
 import (
-  "fmt"
-  "log"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"time"
 
-  "github.com/soniah/gosnmp"
+	"github.com/soniah/gosnmp"
 )
 
-func getTable(target *gosnmp.GoSNMP, oid string) {
-  results, err := gosnmp.Default.BulkWalkAll(oid)
-  if err != nil {
-    log.Fatalf("Get() err: %v", err)
-  }
+var (
+	target    = flag.String("target", "127.0.0.1", "target host to scrape")
+	community = flag.String("community", "public", "SNMP community")
+)
 
-  for _, variable := range results {
-    fmt.Printf("oid: %s ", variable.Name[len(oid) + 1:])
+func getTable(g *gosnmp.GoSNMP, oid string) {
+	results, err := g.WalkAll(oid)
+	if err != nil {
+		log.Fatalf("Get() err: %v", err)
+	}
 
-    // the Value of each variable returned by Get() implements
-    // interface{}. You could do a type switch...
-    switch variable.Type {
-    case gosnmp.OctetString:
-      fmt.Printf("string: %s\n", string(variable.Value.([]byte)))
-    default:
-      // ... or often you're just interested in numeric values.
-      // ToBigInt() will return the Value as a BigInt, for plugging
-      // into your calculations.
-      fmt.Printf("number: %d\n", gosnmp.ToBigInt(variable.Value))
-    }
-  }
+	for _, variable := range results {
+		fmt.Printf("oid: %s ", variable.Name[len(oid)+1:])
+
+		// the Value of each variable returned by Get() implements
+		// interface{}. You could do a type switch...
+		switch variable.Type {
+		case gosnmp.OctetString:
+			fmt.Printf("string: %s\n", string(variable.Value.([]byte)))
+		default:
+			// ... or often you're just interested in numeric values.
+			// ToBigInt() will return the Value as a BigInt, for plugging
+			// into your calculations.
+			fmt.Printf("number: %d\n", gosnmp.ToBigInt(variable.Value))
+		}
+	}
 }
 
 func main() {
-  gosnmp.Default.Target = "127.0.0.1"
-  err := gosnmp.Default.Connect()
-  if err != nil {
-    log.Fatalf("Connect() err: %v", err)
-  }
-  defer gosnmp.Default.Conn.Close()
+	flag.Parse()
+	g := &gosnmp.GoSNMP{
+		Port:      161,
+		Target:    *target,
+		Community: *community,
+		Version:   gosnmp.Version1,
+		Timeout:   time.Duration(2) * time.Second,
+		Retries:   3,
+		Logger:    log.New(os.Stdout, "", 0),
+	}
+	err := g.Connect()
+	if err != nil {
+		log.Fatalf("Connect() err: %v", err)
+	}
+	defer g.Conn.Close()
 
-  oid := ".1.3.6.1.2.1.2.2.1.10"
-  getTable(gosnmp.Default, oid)
+	oid := ".1.3.6.1.2.1.2.2.1.10"
+	getTable(g, oid)
 
 }

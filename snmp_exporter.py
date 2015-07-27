@@ -1,3 +1,4 @@
+import sys
 import urlparse
 import yaml
 from BaseHTTPServer import BaseHTTPRequestHandler
@@ -12,7 +13,7 @@ from prometheus_client import Metric, CollectorRegistry, generate_latest, CONTEN
 def walk_oids(host, port, oids):
   cmdGen = cmdgen.CommandGenerator()
   errorIndication, errorStatus, errorIndex, varBindTable = cmdGen.bulkCmd(
-    cmdgen.CommunityData('pfsense'),
+    cmdgen.CommunityData('public'),
     cmdgen.UdpTransportTarget((host, port)),
     0, 25,
     *oids
@@ -87,13 +88,10 @@ class ForkingHTTPServer(ForkingMixIn, HTTPServer):
 class SnmpExporterHandler(BaseHTTPRequestHandler):
   def do_GET(self):
     params = urlparse.parse_qs(urlparse.urlparse(self.path).query)
-    if 'address' not in params:
-      self.send_response(400)
-      self.end_headers()
-      self.wfile.write("Missing 'address' from parameters")
-      return
+    target = self.path[1:]
+    print 'Collecting %r' % target
     config = yaml.safe_load(open('config'))
-    output = collect_snmp(config, params['address'][0])
+    output = collect_snmp(config, target)
     self.send_response(200)
     self.send_header('Content-Type', CONTENT_TYPE_LATEST)
     self.end_headers()

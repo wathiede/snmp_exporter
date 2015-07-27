@@ -12,7 +12,7 @@ from prometheus_client import Metric, CollectorRegistry, generate_latest, CONTEN
 def walk_oids(host, port, oids):
   cmdGen = cmdgen.CommandGenerator()
   errorIndication, errorStatus, errorIndex, varBindTable = cmdGen.bulkCmd(
-    cmdgen.CommunityData('public'),
+    cmdgen.CommunityData('pfsense'),
     cmdgen.UdpTransportTarget((host, port)),
     0, 25,
     *oids

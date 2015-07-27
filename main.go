@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/soniah/gosnmp"
@@ -47,7 +46,7 @@ func main() {
 		Version:   gosnmp.Version1,
 		Timeout:   time.Duration(2) * time.Second,
 		Retries:   3,
-		Logger:    log.New(os.Stdout, "", 0),
+		//Logger:    log.New(os.Stdout, "", 0),
 	}
 	err := g.Connect()
 	if err != nil {
